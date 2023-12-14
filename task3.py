@@ -7,6 +7,7 @@ from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix
 from scipy.stats import pearsonr
 
 def create_similarity_matrix(data):
@@ -48,19 +49,44 @@ def predict_rating(user_id, movie_id, similarity_matrix, user_ratings):
             weighted_sum += rating * similarity_score
             total_weight += similarity_score
 
-    # print(total_weight)
-    # print(weighted_sum)
-
     if total_weight > 0:
         return weighted_sum / total_weight
     else:
         return 3
 
 def test():
-    train = utils.load_train();
+    train = utils.load_train()
+
     trainDataFrame = pd.DataFrame(train, columns=['id', 'user_id', 'film_id', 'rating'])
-    matrix = create_similarity_matrix(trainDataFrame)
-    
+    testDataFrame = trainDataFrame.sample(n=500, random_state=42)
+    trainDataFrame = trainDataFrame.drop(testDataFrame.index)
+    actual_ratings = testDataFrame['rating']
+    similarity_matrix = create_similarity_matrix(trainDataFrame)
+    user_ratings_pivot = trainDataFrame.pivot_table(index='user_id', columns='film_id', values='rating', aggfunc='first')
+    predicted_ratings = []
+    for _, row in testDataFrame.iterrows():
+        id = row['id']
+        user_id = row['user_id']
+        film_id = row['film_id']
+        predicted_rating = predict_rating(user_id, film_id, similarity_matrix, user_ratings_pivot)
+        predicted_rating = np.clip(np.rint(predicted_rating), 0, 5).astype(int)
+        predicted_ratings.append(predicted_rating)
+
+    predicted_ratings = np.array(predicted_ratings)
+    accuracy = calculate_accuracy(predicted_ratings, actual_ratings)
+    conf_matrix = confusion_matrix(actual_ratings, predicted_ratings)
+    utils.save_confusion_matrix(conf_matrix, 'confusion_matrix3.png')
+    print(f"Accuracy: {accuracy}")
+    return accuracy
+
+def calculate_accuracy(predicted_ratings, actual_ratings, threshold=0.5):
+    correct_predictions = 0
+    for predicted, actual in zip(predicted_ratings, actual_ratings):
+        if abs(predicted - actual) <= threshold:
+            correct_predictions += 1
+
+    accuracy = correct_predictions / len(actual_ratings)
+    return accuracy  
     
 def predict_all_ratings(user_id, similarity_matrix, user_ratings):
     all_movies = user_ratings.columns
@@ -91,4 +117,4 @@ def prod():
     return result
             
 
-prod()
+test()

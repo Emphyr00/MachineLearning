@@ -4,7 +4,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix
 
+totalPred = []
+totalVal = []
 def train_and_predict_knn(X_train, X_test, Y_train, Y_val=None):
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
@@ -20,8 +23,11 @@ def train_and_predict_knn(X_train, X_test, Y_train, Y_val=None):
     else:
         # print('real: ' + str(list(y_val)))
         # print('pred: ' + str(y_pred))
+        totalPred.append(Y_pred)
+        totalVal.append(Y_val)
         accuracy = accuracy_score(Y_val, Y_pred)
         return accuracy
+    
 def test():
     train = utils.load_train();
     users = utils.get_unique_users(train)
@@ -45,7 +51,12 @@ def test():
         y = userFilmsFeatures['evaluation']
         X_train, X_val, Y_train, Y_val = train_test_split(X, y, test_size=0.2, random_state=42)
         total_accuracy += train_and_predict_knn(X_train, X_val, Y_train, Y_val)
-
+        
+    totalPredFlattened = [item for array in totalPred for item in array]
+    totalValFlattened = [item for array in totalVal for item in array]
+    conf_matrix = confusion_matrix(totalValFlattened, totalPredFlattened)
+    utils.save_confusion_matrix(conf_matrix, 'confusion_matrix1.png')
+    
     avg_accuracy = total_accuracy / num_users
     print(f'Average Validation Accuracy: {avg_accuracy}')  
     
@@ -71,7 +82,7 @@ def prod():
             else:
                 userFilmsTrainFeatures = pd.concat([userFilmsTrainFeatures, filmFeatures], ignore_index=True)
         
-        print(filmsTest)
+        # print(filmsTest)
         for filmInfo in filmsTest:
             filmFeatures = utils.get_dateframe_row(allFilmsFeatures, filmInfo[2])
             filmFeatures['evaluation'] = None
@@ -93,4 +104,4 @@ def prod():
     return result
             
 
-prod()
+test()

@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 from scipy.stats import pearsonr
+from sklearn.metrics import accuracy_score, confusion_matrix
 
 def compute_gradients(features_matrix, parameters_matrix, ratings, movie_id_to_index, person_id_to_index):
     gradients_features = np.zeros_like(features_matrix)
@@ -106,5 +107,36 @@ def prod():
 
     return predictions_array
 
-predicted_test_df = prod()
-utils.save_results('submission_lol.csv', predicted_test_df)
+def test():
+    train = utils.load_train()
+
+    # Splitting the train data into train and test subsets
+    train_subset, test_subset = train_test_split(train, test_size=0.1, random_state=42)
+
+    num_features = 50
+    learning_rate = 0.001
+    max_iterations = 200
+    epsilon = 0.001
+    
+    features_matrix, parameters_matrix, movie_id_to_index, person_id_to_index = train_model(
+        train_subset, num_features, learning_rate, max_iterations, epsilon
+    )
+    
+    test_df = pd.DataFrame(test_subset, columns=["id", "person_id", "movie_id", "actual_rating"])
+    
+    test_df['predicted_rating'] = predict_ratings(
+        features_matrix, parameters_matrix, test_df, movie_id_to_index, person_id_to_index
+    )
+    
+    accuracy = accuracy_score(test_df['actual_rating'], test_df['predicted_rating'])
+    print(f"Accuracy: {accuracy}")
+
+    cm = confusion_matrix(test_df['actual_rating'], test_df['predicted_rating'])
+    utils.save_confusion_matrix(cm, 'confusion_matrix4.png')
+
+    predictions_array = test_df[['id', 'person_id', 'movie_id', 'predicted_rating']].to_numpy().tolist()
+
+    return predictions_array, accuracy, cm
+
+predicted_test_df = test()
+# utils.save_results('submission_kek.csv', predicted_test_df)

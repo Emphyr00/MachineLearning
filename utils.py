@@ -2,6 +2,9 @@ import json
 import numpy as np 
 import pandas as pd 
 import csv
+import matplotlib.pyplot as plt
+import seaborn as sns  # Optional, for a nicer heatmap style
+from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import MinMaxScaler
 
 def load_json():
@@ -121,6 +124,12 @@ def extract_features():
 def get_dateframe_row(dataframe, number):
     return dataframe.loc[[number - 1]]
 
-
+def save_confusion_matrix(conf_matrix, filename):
+    plt.figure(figsize=(10,7))
+    sns.heatmap(conf_matrix, annot=True, fmt='g')  # 'g' format avoids scientific notation
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.savefig(filename)
+    plt.close()  # Close the plot to free up memory
 
 extract_features()

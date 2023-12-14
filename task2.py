@@ -6,8 +6,11 @@ from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix
 
-TREE_MODE = False
+TREE_MODE = True
+totalPred = []
+totalVal = []
 
 def train_and_predict_tree(X_train, X_test, Y_train, user_id, Y_val=None, use_random_forest=False):
     scaler = StandardScaler()
@@ -24,16 +27,19 @@ def train_and_predict_tree(X_train, X_test, Y_train, user_id, Y_val=None, use_ra
     model.fit(X_train, Y_train)
     Y_pred = model.predict(X_test)
     # print(X_train)
-    if not use_random_forest:
-        plt.figure(figsize=(100,40))
-        plot_tree(model, filled=True, feature_names=feature_names, class_names=True, rounded=True)
-        plt.savefig('./tree-'+str(user_id)+'.png')
-        plt.close()
+    
+    # if not use_random_forest:
+    #     plt.figure(figsize=(100,40))
+    #     plot_tree(model, filled=True, feature_names=feature_names, class_names=True, rounded=True)
+    #     plt.savefig('./tree-'+str(user_id)+'.png')
+    #     plt.close()
     
     if Y_val is None:
         return Y_pred
     else:
         accuracy = accuracy_score(Y_val, Y_pred)
+        totalPred.append(Y_pred)
+        totalVal.append(Y_val)
         print(str(user_id) + ': ' + str(accuracy))
         return accuracy
     
@@ -61,6 +67,10 @@ def test():
         X_train, X_val, Y_train, Y_val = train_test_split(X, y, test_size=0.2, random_state=42)
         total_accuracy += train_and_predict_tree(X_train, X_val, Y_train, filmInfo[1], Y_val, TREE_MODE)
 
+    totalPredFlattened = [item for array in totalPred for item in array]
+    totalValFlattened = [item for array in totalVal for item in array]
+    conf_matrix = confusion_matrix(totalValFlattened, totalPredFlattened)
+    utils.save_confusion_matrix(conf_matrix, 'confusion_matrix2.png')
     avg_accuracy = total_accuracy / num_users
     print(f'Average Validation Accuracy: {avg_accuracy}')  
     
@@ -107,4 +117,4 @@ def prod():
     return result
             
 
-prod()
+test()
